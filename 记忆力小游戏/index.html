@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1" />
+    <title>game</title>
+    <link rel="stylesheet" href="app.css">
+</head>
+
+<body>
+    <div id="gameBegin"></div>
+    <div id="canvas"></div>
+
+    <script>
+        // GameLayer
+        (function() {
+            function GameLayer(options) {
+                this.isRun = true;
+                this.maps = {
+                    length: 0
+                };
+                this.gameIndex = null;
+
+                this.options = this.extend(this.Defaults, options);
+                this.gameInit();
+                this.gameStart();
+            }
+
+            GameLayer.prototype.gameInit = function() {
+                var o = this.options,
+                    dom = document.getElementById(o.id),
+                    clientW = window.innerWidth,
+                    clientH = window.innerHeight,
+                    width = clientW / o.columns,
+                    height = clientH / o.rows;
+
+                dom.style.position = 'relative';
+                for (var i = 0; i < o.rows; i++) {
+                    for (var t = 0; t < o.columns; t++) {
+                        var div = document.createElement('div');
+                        div.className = 'box';
+                        div.style.width = width + 'px';
+                        div.style.height = height + 'px';
+                        div.style.position = 'absolute';
+                        div.style.top = i * height + 'px';
+                        div.style.left = t * width + 'px';
+                        div.setAttribute('index', i * this.options.columns + t);
+                        div.addEventListener('click', this.divClicked.bind(this));
+                        dom.appendChild(div);
+                    }
+                }
+            }
+
+            GameLayer.prototype.gameStart = function() {
+                var random_i = this.getRandom();
+                this.gameRun(random_i);
+            }
+
+            GameLayer.prototype.gameRun = function(i) {
+                var dom = document.getElementById(this.options.id);
+                this.maps[i] = true;
+                this.maps['length'] += 1;
+                this.gameIndex = i;
+                dom.childNodes[i].style.backgroundColor = this.options.color;
+                this.isRun = false;
+            }
+
+            GameLayer.prototype.divClicked = function(event) {
+                if (this.isRun) return;
+                this.isRun = true;
+                var $this = event.target;
+                var index = $this.getAttribute('index');
+                if (this.maps[index] && this.gameIndex == index) {
+//                    $this.style.backgroundColor = this.options.color;
+                    this.gamePass();
+                } else {
+                    var score = this.maps.length - 1;
+                    alert("游戏结束! 得分:" + score + "");
+                    this.gameReFresh();
+                }
+            }
+
+            GameLayer.prototype.gamePass = function() {
+                if (this.maps.length == this.options.rows * this.options.columns) {
+                    alert("通关");
+                } else {
+                    console.log("下一关");
+                    var self = this;
+                    var dom = document.getElementById(this.options.id).childNodes;
+                    for (key in this.maps) {
+                        (key != 'length') && (dom[key].style.backgroundColor = 'white');
+                    }
+                    setTimeout(function() {
+                        for (key in self.maps) {
+                            (key != 'length') && (dom[key].style.backgroundColor = self.options.color);
+                        }
+                        self.gameStart();
+                    }, 500);
+                }
+            }
+
+            GameLayer.prototype.getRandom = function() {
+                var i = ~~(Math.random() * this.options.rows * this.options.columns);
+                if (this.maps[i]) {
+                    i = this.getRandom();
+                }
+                return i;
+            }
+
+            GameLayer.prototype.gameReFresh = function() {
+                var dom = document.getElementById(this.options.id).childNodes;
+                this.maps = {
+                    length: 0
+                };
+                this.gameIndex = null;
+                for (var i = 0; i < dom.length; i++) {
+                    dom[i].style.backgroundColor = 'white';
+                }
+                this.gameStart();
+            }
+
+            GameLayer.prototype.extend = function(defaultObj, obj) {
+                for (key in obj) {
+                    if (typeof(obj[key]) === "function")
+                        defaultObj[key] = obj[key];
+                    else
+                        !!defaultObj[key] && (defaultObj[key] = obj[key]);
+                }
+                return defaultObj;
+            }
+
+            GameLayer.prototype.Defaults = {
+                rows: 5,
+                columns: 4,
+                color: 'yellow',
+                id: 'canvas'
+            }
+
+            window.extend = GameLayer.prototype.extend;
+            window.GameLayer = GameLayer;
+
+        })();
+
+        // GameControl
+        (function() {
+            function GameControl(c_o, l_o) {
+                this.options = extend(this.Defaults, c_o);
+                this.gameOptions = l_o;
+                this.SceneInit();
+            }
+
+            GameControl.prototype.SceneInit = function() {
+                var dom = document.getElementById(this.options.id);
+                // logo
+                var logo = document.createElement('div');
+                logo.className = 'logo';
+                logo.textContent = this.options.text;
+                dom.appendChild(logo);
+                
+                // start button
+                var startBtn = document.createElement('img');
+                startBtn.className = 'startBtn';
+                var self = this;
+                startBtn.onmouseover = function () {
+                    this.src = self.options.startBtnHoverImg;
+                }
+                startBtn.onmouseout = function () {
+                    this.src = self.options.startBtnImg;
+                }
+                startBtn.src = this.options.startBtnImg;
+                startBtn.addEventListener('click', this.startBtnClicked.bind(this));
+                dom.appendChild(startBtn);
+            }
+            
+            GameControl.prototype.startBtnClicked = function () {
+                var dom = document.getElementById(this.options.id);
+                dom.style.display = 'none';
+                var game = new GameLayer(this.gameOptions);
+            }
+
+            GameControl.prototype.Defaults = {
+                id: 'gameBegin',
+                text: 'yellow',
+                startBtnImg: 'start1.png',
+                startBtnHoverImg: 'start2.png'
+            }
+
+            new GameControl({}, {
+                rows: 6,
+                columns: 5
+            })
+
+        })()
+
+    </script>
+
+</body>
+
+</html>
