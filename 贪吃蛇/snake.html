@@ -46,8 +46,8 @@
     </div>
     <div id="gameBox"></div>
 
-    
-       
+
+
     <script>
         var Snake = function(rowspan, colspan) {
             this.rowspan = rowspan;
@@ -62,6 +62,7 @@
             this._foodClass = "act";
             this._foodPos = null;
             this._deletePos = null;
+            this._switches = true;
             this._allBoxDocuments = [];
             this._snakeBody = [
                 [0, 0],
@@ -118,27 +119,32 @@
 
         Snake.prototype.bandEvents = function() {
             document.onkeydown = function(event) {
-                if (event.keyCode == 37) {
-                    if (this._direction !== "right") {
-                        this._direction = "left";
+                if (this._switches) {
+                    if (event.keyCode == 37) {
+                        if (this._direction !== "right") {
+                            this._direction = "left";
+                        }
+                    } else if (event.keyCode == 38) {
+                        if (this._direction !== "down") {
+                            this._direction = "up";
+                        }
+                    } else if (event.keyCode == 39) {
+                        if (this._direction !== "left") {
+                            this._direction = "right";
+                        }
+                    } else if (event.keyCode == 40) {
+                        if (this._direction !== "up") {
+                            this._direction = "down";
+                        }
                     }
+                    
+                    this._switches = false;
+                    setTimeout(function() {
+                        this._switches = true;
+                    }.bind(this), 50)
                 }
-                if (event.keyCode == 38) {
-                    if (this._direction !== "down") {
-                        this._direction = "up";
-                    }
-                }
-                if (event.keyCode == 39) {
-                    if (this._direction !== "left") {
-                        this._direction = "right";
-                    }
-                }
-                if (event.keyCode == 40) {
-                    if (this._direction !== "up") {
-                        this._direction = "down";
-                    }
-                }
-            }.bind(this)
+
+            }.bind(this);
         }
 
         Snake.prototype.setNewPos = function(newPos) {
@@ -185,7 +191,7 @@
             this._snakeBody.unshift(this._deletePos);
             this.renderSnake();
         }
-        
+
         Snake.prototype.addScore = function() {
             var score = parseInt(this._score.innerHTML);
             this._score.innerHTML = (score += 1);
