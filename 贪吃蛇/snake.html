@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>snake</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        
+        html,
+        body {
+            width: 100%;
+            height: 100%；
+        }
+        
+        .red,
+        .act {
+            background: red;
+        }
+        
+        #gameBox {
+            width: 500px;
+            height: 500px;
+            margin: 0 auto;
+            border: 1px solid #c1c1c1;
+            box-sizing: border-box;
+            position: relative;
+        }
+        
+        #buttonList {
+            margin: 100px auto 30px;
+            text-align: center;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="buttonList">
+        <input type="button" value="游戏开始" id="gameStart" style="padding:5px 20px; margin-bottom: 20px">
+        <br>
+        <p>得分：<span id="score">0</span></p>
+    </div>
+    <div id="gameBox"></div>
+
+    
+       
+    <script>
+        var Snake = function(rowspan, colspan) {
+            this.rowspan = rowspan;
+            this.colspan = colspan;
+
+            this._cavans = document.getElementById("gameBox");
+            this._score = document.getElementById("score");
+            this._boxWidth = 0;
+            this._boxHeight = 0;
+            this._direction = "right";
+            this._activeClass = "red";
+            this._foodClass = "act";
+            this._foodPos = null;
+            this._deletePos = null;
+            this._allBoxDocuments = [];
+            this._snakeBody = [
+                [0, 0],
+                [1, 0]
+            ];
+
+            this.initScene();
+            this.gameStart();
+        }
+
+        Snake.prototype.initScene = function() {
+            this._boxWidth = this._cavans.offsetWidth / this.colspan;
+            this._boxHeight = this._cavans.offsetHeight / this.rowspan;
+
+            for (var i = 0; i < this.colspan; i++) {
+                for (var g = 0; g < this.rowspan; g++) {
+                    var box = document.createElement("div");
+                    box.style.width = this._boxWidth + "px";
+                    box.style.height = this._boxHeight + "px";
+                    box.style.position = "absolute";
+                    box.style.left = g * this._boxWidth + "px";
+                    box.style.top = i * this._boxHeight + "px";
+                    this._allBoxDocuments.push(box);
+                    this._cavans.appendChild(box);
+                }
+            }
+
+            this.renderSnake();
+            this.bandEvents();
+        }
+
+        Snake.prototype.renderSnake = function() {
+            for (var i = 0; i < this._snakeBody.length; i++) {
+                var v = this._snakeBody[i];
+                var dom = this._allBoxDocuments[v[0] + (v[1]) * this.rowspan];
+                dom.className = dom.className + " " + this._activeClass;
+
+            }
+        }
+
+        Snake.prototype.getFoodRandom = function() {
+            var _random = 0 | Math.random() * this._allBoxDocuments.length;
+            if (this._allBoxDocuments[_random].className.indexOf(this._activeClass) >= 0 ||
+                this._allBoxDocuments[_random].className.indexOf(this._foodClass) >= 0) {
+                this.getFoodRandom();
+            } else {
+                if (this._foodPos) {
+                    this._allBoxDocuments[this._foodPos].className = "";
+                }
+                this._allBoxDocuments[_random].className = this._foodClass;
+                this._foodPos = _random;
+            }
+        }
+
+        Snake.prototype.bandEvents = function() {
+            document.onkeydown = function(event) {
+                if (event.keyCode == 37) {
+                    if (this._direction !== "right") {
+                        this._direction = "left";
+                    }
+                }
+                if (event.keyCode == 38) {
+                    if (this._direction !== "down") {
+                        this._direction = "up";
+                    }
+                }
+                if (event.keyCode == 39) {
+                    if (this._direction !== "left") {
+                        this._direction = "right";
+                    }
+                }
+                if (event.keyCode == 40) {
+                    if (this._direction !== "up") {
+                        this._direction = "down";
+                    }
+                }
+            }.bind(this)
+        }
+
+        Snake.prototype.setNewPos = function(newPos) {
+            switch (this._direction) {
+                case "up":
+                    newPos[1] -= 1;
+                    break;
+                case "down":
+                    newPos[1] += 1;
+                    break;
+                case "left":
+                    newPos[0] -= 1;
+                    break;
+                default:
+                    newPos[0] += 1;
+            }
+            return newPos;
+        }
+
+        Snake.prototype.snakeRun = function() {
+            this._snakeBody.forEach(function(v) {
+                var dom = this._allBoxDocuments[v[0] + (v[1]) * this.rowspan];
+                dom.className = dom.className.replace(/red/ig, "");
+            }.bind(this))
+            var newPos = this._snakeBody[this._snakeBody.length - 1].slice(0, 2);
+            var _nextPos = this.setNewPos(newPos);
+            if (this._snakeBody.some(function(v) {
+                    return v.join(",") == _nextPos.join(",")
+                })) {
+                this.gameOver();
+                return;
+            }
+            if (_nextPos[0] < 0 || _nextPos[0] >= (this.rowspan) || _nextPos[1] < 0 || _nextPos[1] >= (this.colspan)) {
+                this.gameOver();
+                return;
+            }
+            this._deletePos = this._snakeBody[0].slice(0, 2);
+            this._snakeBody.shift();
+            this._snakeBody.push(_nextPos);
+
+        }
+
+        Snake.prototype.addSnakeBody = function() {
+            this._snakeBody.unshift(this._deletePos);
+            this.renderSnake();
+        }
+        
+        Snake.prototype.addScore = function() {
+            var score = parseInt(this._score.innerHTML);
+            this._score.innerHTML = (score += 1);
+        }
+
+        Snake.prototype.nextFood = function() {
+            var headPos = this._snakeBody[this._snakeBody.length - 1];
+            if (headPos[0] + headPos[1] * this.rowspan === this._foodPos) {
+                this.addScore();
+                this.addSnakeBody();
+                this.getFoodRandom();
+            }
+        }
+
+        Snake.prototype.gameStart = function() {
+            this.getFoodRandom();
+            this._games = setInterval(function() {
+                this.snakeRun();
+                this.renderSnake();
+                this.nextFood();
+            }.bind(this), 80);
+        }
+
+        Snake.prototype.gameOver = function() {
+            alert("game over!! score: " + this._score.innerHTML);
+            clearInterval(this._games);
+        }
+
+
+        window.onload = function() {
+            document.getElementById("gameStart").onclick = function() {
+                document.getElementById("gameBox").innerHTML = "";
+                new Snake(50, 50);
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>
